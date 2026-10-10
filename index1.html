@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Time Off Request | Store 6951</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* ====== Settings you might change ====== */
+  /* Email goes to the address in FORM_ENDPOINT in the script at the bottom. */
+
+  :root {
+    --ink: #14213D;
+    --ink-soft: #4A5670;
+    --paper: #FFFFFF;
+    --wash: #EDF1F7;
+    --line: #D5DCE7;
+    --range: #CFE0F5;
+    --red: #C8102E;
+    --ok: #1E7A46;
+    --display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+    --body: "Barlow", "Segoe UI", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--wash);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.5;
+    padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 28px 18px 48px; }
+
+  header { margin-bottom: 22px; }
+  .store {
+    display: inline-block;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--paper);
+    background: var(--red);
+    padding: 2px 10px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(38px, 9vw, 52px);
+    line-height: 0.95;
+    margin: 0 0 8px;
+  }
+  .lede { margin: 0; color: var(--ink-soft); max-width: 42ch; }
+
+  form { display: flex; flex-direction: column; gap: 18px; }
+
+  /* ---- Calendar: the main thing on the page ---- */
+  .cal {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .cal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--ink); color: var(--paper);
+    padding: 10px 8px;
+  }
+  .cal-head h2 {
+    margin: 0; font-family: var(--display); font-weight: 700; font-size: 26px;
+  }
+  .nav {
+    width: 42px; height: 42px; border: 0; border-radius: 6px;
+    background: transparent; color: var(--paper); font-size: 22px; cursor: pointer;
+  }
+  .nav:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
+  .nav:disabled { opacity: 0.3; cursor: default; }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px; gap: 2px 0; }
+  .dow {
+    text-align: center; font-size: 13px; font-weight: 600; color: var(--ink-soft);
+    padding: 4px 0 6px;
+  }
+  .day {
+    aspect-ratio: 1 / 1;
+    border: 0; background: transparent; color: var(--ink);
+    font-family: var(--display); font-weight: 600; font-size: 20px;
+    cursor: pointer; position: relative;
+  }
+  .day:hover:not(:disabled):not(.start):not(.end) { background: var(--wash); border-radius: 50%; }
+  .day:disabled { color: #B7BFCC; cursor: default; }
+  .day.today::after {
+    content: ""; position: absolute; left: 50%; bottom: 14%;
+    width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--red);
+  }
+  .day.in-range { background: var(--range); }
+  .day.start, .day.end { background: var(--ink); color: var(--paper); }
+  .day.start { border-radius: 50% 0 0 50%; }
+  .day.end { border-radius: 0 50% 50% 0; }
+  .day.start.end { border-radius: 50%; }
+  .day.start.today::after, .day.end.today::after { background: var(--paper); }
+
+  .picked {
+    border-top: 1px solid var(--line);
+    padding: 12px 14px; font-weight: 600; min-height: 50px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .picked .hint { font-weight: 400; color: var(--ink-soft); }
+  .clear {
+    border: 0; background: none; color: var(--red); font: inherit; font-weight: 600;
+    cursor: pointer; padding: 4px 2px;
+  }
+
+  /* ---- Details ---- */
+  .panel {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+    padding: 18px; display: flex; flex-direction: column; gap: 16px;
+  }
+  label, .fieldset-title { display: block; font-weight: 600; font-size: 15px; }
+  .opt { font-weight: 400; color: var(--ink-soft); }
+  input[type="text"], input[type="time"], select, textarea {
+    display: block; width: 100%; margin-top: 6px;
+    font: inherit; color: var(--ink);
+    padding: 11px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper);
+  }
+  textarea { min-height: 76px; resize: vertical; }
+  fieldset { border: 0; margin: 0; padding: 0; }
+  .toggle { display: grid; grid-template-columns: 1fr 1fr; margin-top: 6px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+  .toggle label {
+    text-align: center; padding: 11px 6px; cursor: pointer; font-weight: 500;
+  }
+  .toggle label + input + label { border-left: 1px solid var(--line); }
+  .toggle input:checked + label { background: var(--ink); color: var(--paper); }
+  .toggle input:focus-visible + label { outline: 3px solid var(--red); outline-offset: -3px; }
+  .times { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .times[hidden] { display: none; }
+  .times-note { grid-column: 1 / -1; margin: -4px 0 0; font-size: 14px; color: var(--ink-soft); }
+
+  .submit {
+    border: 0; border-radius: 8px; background: var(--red); color: var(--paper);
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    padding: 14px; cursor: pointer;
+  }
+  .submit:hover:not(:disabled) { background: #A50D26; }
+  .submit:disabled { opacity: 0.6; cursor: default; }
+
+  .msg { margin: 0; padding: 12px 14px; border-radius: 6px; font-weight: 500; }
+  .msg.error { background: #FCE8EB; color: #8A0B20; }
+  .msg[hidden] { display: none; }
+
+  .done {
+    background: var(--paper); border: 2px solid var(--ok); border-radius: 10px; padding: 26px 20px;
+  }
+  .done h2 { font-family: var(--display); font-size: 34px; margin: 0 0 6px; color: var(--ok); }
+  .done p { margin: 0 0 16px; }
+  .again {
+    border: 1px solid var(--ink); background: var(--paper); color: var(--ink);
+    font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 6px; cursor: pointer;
+  }
+
+  .hp { position: absolute; left: -9999px; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 3px solid var(--red); outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .day, .submit, .toggle label { transition: background-color 0.12s; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="store">Store 6951</span>
+    <h1>Request time off</h1>
+    <p class="lede">Requests need at least 7 days' notice. Tap the first day you need off, then the last. The store gets an email as soon as you send it.</p>
+  </header>
+
+  <form id="ptoForm" novalidate>
+    <div class="cal" aria-label="Choose your days off">
+      <div class="cal-head">
+        <button type="button" class="nav" id="prev" aria-label="Previous month">‹</button>
+        <h2 id="monthLabel" aria-live="polite"></h2>
+        <button type="button" class="nav" id="next" aria-label="Next month">›</button>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="picked" id="picked"></div>
+    </div>
+
+    <div class="panel">
+      <label>Your name
+        <input type="text" id="name" autocomplete="name" required>
+      </label>
+
+      <label>Position
+        <select id="position">
+          <option>Delivery driver</option>
+          <option>CSR</option>
+          <option>Shift / assistant manager</option>
+          <option>Other</option>
+        </select>
+      </label>
+
+      <fieldset>
+        <span class="fieldset-title">How much of the day?</span>
+        <div class="toggle">
+          <input type="radio" name="span" id="spanAll" value="all" checked>
+          <label for="spanAll">All day</label>
+          <input type="radio" name="span" id="spanPart" value="part">
+          <label for="spanPart">Certain hours</label>
+        </div>
+      </fieldset>
+
+      <div class="times" id="times" hidden>
+        <label>From
+          <input type="time" id="fromTime">
+        </label>
+        <label>Until
+          <input type="time" id="toTime">
+        </label>
+        <p class="times-note" id="timesNote" hidden>These hours apply to each day you picked.</p>
+      </div>
+
+      <label>Reason <span class="opt">(optional)</span>
+        <textarea id="reason"></textarea>
+      </label>
+
+      <input type="text" name="_honey" id="honey" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    </div>
+
+    <p class="msg error" id="error" role="alert" hidden></p>
+    <button type="submit" class="submit" id="submitBtn">Send request</button>
+  </form>
+
+  <div class="done" id="done" hidden>
+    <h2>Request sent</h2>
+    <p id="doneText"></p>
+    <button type="button" class="again" id="again">Send another request</button>
+  </div>
+</div>
+
+<script>
+  // Where requests are emailed. After you activate FormSubmit (see setup notes),
+  // you can swap the email for the random code FormSubmit gives you to hide it.
+  const FORM_ENDPOINT = "https://formsubmit.co/ajax/6951@dominostx.com";
+
+  // How many months ahead people can request
+  const MONTHS_AHEAD = 6;
+
+  // Minimum notice: the earliest day someone can request off is this many days from today
+  const MIN_NOTICE_DAYS = 7;
+
+  const $ = (id) => document.getElementById(id);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const earliest = new Date(today.getFullYear(), today.getMonth(), today.getDate() + MIN_NOTICE_DAYS);
+  let view = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+  let start = null, end = null;
+
+  const fmtLong = (d) => d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const fmtFull = (d) => d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  const sameDay = (a, b) => a && b && a.getTime() === b.getTime();
+  const dayCount = () => start ? Math.round(((end || start) - start) / 86400000) + 1 : 0;
+
+  function fmtTime(t) {
+    if (!t) return "";
+    const [h, m] = t.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${ampm}`;
+  }
+
+  function render() {
+    const y = view.getFullYear(), m = view.getMonth();
+    $("monthLabel").textContent = view.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    $("prev").disabled = y === earliest.getFullYear() && m === earliest.getMonth();
+    const last = new Date(today.getFullYear(), today.getMonth() + MONTHS_AHEAD, 1);
+    $("next").disabled = view >= last;
+
+    const grid = $("grid");
+    grid.innerHTML = "";
+    ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d => {
+      const el = document.createElement("div");
+      el.className = "dow"; el.textContent = d.slice(0, 2);
+      el.setAttribute("aria-hidden", "true");
+      grid.appendChild(el);
+    });
+
+    const firstDow = new Date(y, m, 1).getDay();
+    for (let i = 0; i < firstDow; i++) grid.appendChild(document.createElement("div"));
+
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(y, m, d);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "day";
+      btn.textContent = d;
+      btn.setAttribute("aria-label", fmtFull(date));
+      if (date < earliest) btn.disabled = true;
+      if (sameDay(date, today)) btn.classList.add("today");
+      const e = end || start;
+      if (start && date >= start && date <= e) {
+        btn.classList.add("in-range");
+        btn.setAttribute("aria-pressed", "true");
+      }
+      if (sameDay(date, start)) btn.classList.add("start");
+      if (sameDay(date, e)) btn.classList.add("end");
+      btn.addEventListener("click", () => pick(date));
+      grid.appendChild(btn);
+    }
+    renderPicked();
+  }
+
+  function pick(date) {
+    if (!start || end || date < start) { start = date; end = null; }
+    else if (sameDay(date, start)) { end = null; }
+    else { end = date; }
+    $("error").hidden = true;
+    render();
+  }
+
+  function renderPicked() {
+    const el = $("picked");
+    if (!start) { el.innerHTML = '<span class="hint">No days picked yet</span>'; }
+    else {
+      const n = dayCount();
+      const text = end
+        ? `${fmtLong(start)} to ${fmtLong(end)} (${n} days)`
+        : `${fmtLong(start)} <span class="hint">· tap another day to make it a range</span>`;
+      el.innerHTML = `<span>${text}</span><button type="button" class="clear" id="clear">Clear</button>`;
+      $("clear").addEventListener("click", () => { start = end = null; render(); });
+    }
+    $("timesNote").hidden = dayCount() < 2;
+  }
+
+  $("prev").addEventListener("click", () => { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); render(); });
+  $("next").addEventListener("click", () => { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); render(); });
+
+  document.querySelectorAll('input[name="span"]').forEach(r =>
+    r.addEventListener("change", () => { $("times").hidden = !$("spanPart").checked; })
+  );
+
+  function showError(text) {
+    const el = $("error");
+    el.textContent = text; el.hidden = false;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  $("ptoForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const name = $("name").value.trim();
+    const partDay = $("spanPart").checked;
+    const from = $("fromTime").value, to = $("toTime").value;
+
+    if (!start) return showError("Pick at least one day on the calendar.");
+    if (start < earliest) return showError(`Requests need at least ${MIN_NOTICE_DAYS} days' notice. The earliest day you can pick is ${fmtFull(earliest)}.`);
+    if (!name) { $("name").focus(); return showError("Enter your name so the store knows who's asking."); }
+    if (partDay && (!from || !to)) return showError("Enter both a start and end time, or switch to All day.");
+    if (partDay && from >= to) return showError("The end time needs to be after the start time.");
+
+    const lastDay = end || start;
+    const dates = end ? `${fmtFull(start)} to ${fmtFull(lastDay)}` : fmtFull(start);
+    const hours = partDay ? `${fmtTime(from)} to ${fmtTime(to)}` : "All day";
+
+    const payload = {
+      _subject: `Time off request: ${name} (${fmtLong(start)}${end ? " to " + fmtLong(end) : ""})`,
+      _template: "table",
+      _captcha: "false",
+      _honey: $("honey").value,
+      Employee: name,
+      Position: $("position").value,
+      Dates: dates,
+      "Number of days": String(dayCount()),
+      Hours: hours,
+      Reason: $("reason").value.trim() || "(none given)",
+      "Submitted at": new Date().toLocaleString("en-US")
+    };
+
+    const btn = $("submitBtn");
+    btn.disabled = true; btn.textContent = "Sending...";
+    $("error").hidden = true;
+
+    try {
+      const res = await fetch(FORM_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || String(data.success) !== "true") {
+        throw new Error(data.message || "The request didn't go through.");
+      }
+      $("ptoForm").hidden = true;
+      $("doneText").textContent = `Your request for ${dates} (${hours.toLowerCase()}) is in the store's inbox. Check with your manager for approval.`;
+      $("done").hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      showError(`${err.message} Check your connection and try again, or tell your manager in person.`);
+    } finally {
+      btn.disabled = false; btn.textContent = "Send request";
+    }
+  });
+
+  $("again").addEventListener("click", () => {
+    $("ptoForm").reset();
+    $("times").hidden = true;
+    start = end = null;
+    view = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+    render();
+    $("done").hidden = true;
+    $("ptoForm").hidden = false;
+  });
+
+  render();
+</script>
+</body>
+</html>
